@@ -34,12 +34,12 @@ module Xeroizer
       boolean       :is_reconciled
       string        :status
       decimal       :total
+      string        :name
 
       alias_method :reconciled?, :is_reconciled
 
       belongs_to :contact, :model_name => 'Contact'
       string :line_amount_types
-      string :name
       has_many :line_items, :model_name => 'LineItem'
       belongs_to :bank_account, :model_name => 'BankAccount'
 
@@ -59,7 +59,7 @@ module Xeroizer
 
       def sub_total=(value); raise SettingTotalDirectlyNotSupported.new(:sub_total); end
       def total_tax=(value); raise SettingTotalDirectlyNotSupported.new(:total_tax); end
-      def total=(value);     raise SettingTotalDirectlyNotSupported.new(:total);     end
+      #def total=(value);     raise SettingTotalDirectlyNotSupported.new(:total);     end
 
       #def total; sub_total + total_tax; end
 
