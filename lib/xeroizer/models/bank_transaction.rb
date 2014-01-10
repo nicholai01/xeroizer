@@ -39,6 +39,7 @@ module Xeroizer
 
       belongs_to :contact, :model_name => 'Contact'
       string :line_amount_types
+      string :name
       has_many :line_items, :model_name => 'LineItem'
       belongs_to :bank_account, :model_name => 'BankAccount'
 
