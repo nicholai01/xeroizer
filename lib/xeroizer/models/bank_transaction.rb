@@ -34,7 +34,6 @@ module Xeroizer
       boolean       :is_reconciled
       string        :status
       decimal       :total
-      string        :name
 
       alias_method :reconciled?, :is_reconciled
 
@@ -62,6 +61,16 @@ module Xeroizer
       #def total=(value);     raise SettingTotalDirectlyNotSupported.new(:total);     end
 
       #def total; sub_total + total_tax; end
+
+      # Access the contact name without forcing a download of
+      # an incomplete, summary invoice.
+      def contact_name
+        attributes[:contact] && attributes[:contact][:name]
+      end
+
+      def total
+        attributes[:total]
+      end
 
       def sub_total
         if ought_to_recalculate_totals?
