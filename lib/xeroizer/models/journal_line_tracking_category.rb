@@ -13,7 +13,6 @@ module Xeroizer
       string  :name
       string  :option
       guid    :tracking_category_id
-      guid    :tracking_option_id
       
     end
     

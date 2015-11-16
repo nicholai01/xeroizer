@@ -140,51 +140,43 @@ module Xeroizer
           result
         end
 
-        def save_records(records, chunk_size = DEFAULT_RECORDS_PER_BATCH_SAVE)
+        def batch_save(chunk_size = DEFAULT_RECORDS_PER_BATCH_SAVE)
           no_errors = true
-          return false unless records.all?(&:valid?)
+          @objects = {}
+          @allow_batch_operations = true
 
-          actions = records.group_by {|o| o.new_record? ? create_method : :http_post }
-          actions.each_pair do |http_method, records_for_method|
-            records_for_method.each_slice(chunk_size) do |some_records|
-              request = to_bulk_xml(some_records)
-              response = parse_response(self.send(http_method, request, {:summarizeErrors => false}))
-              response.response_items.each_with_index do |record, i|
-                if record and record.is_a?(model_class)
-                  some_records[i].attributes = record.non_calculated_attributes
-                  some_records[i].errors = record.errors
-                  no_errors = record.errors.nil? || record.errors.empty? if no_errors
-                  some_records[i].saved!
+          yield
+
+          if @objects[model_class]
+            objects = @objects[model_class].values.compact
+            return false unless objects.all?(&:valid?)
+            actions = objects.group_by {|o| o.new_record? ? create_method : :http_post }
+            actions.each_pair do |http_method, records|
+              records.each_slice(chunk_size) do |some_records|
+                request = to_bulk_xml(some_records)
+                response = parse_response(self.send(http_method, request, {:summarizeErrors => false}))
+                response.response_items.each_with_index do |record, i|
+                  if record and record.is_a?(model_class)
+                    some_records[i].attributes = record.non_calculated_attributes
+                    some_records[i].errors = record.errors
+                    no_errors = record.errors.nil? || record.errors.empty? if no_errors
+                    some_records[i].saved!
+                  end
                 end
               end
             end
           end
 
-          no_errors
-        end
-
-        def batch_save(chunk_size = DEFAULT_RECORDS_PER_BATCH_SAVE)
           @objects = {}
-          @allow_batch_operations = true
-
-          begin
-            yield
-
-            if @objects[model_class]
-              objects = @objects[model_class].values.compact
-              save_records(objects, chunk_size)
-            end
-          ensure
-            @objects = {}
-            @allow_batch_operations = false
-          end
+          @allow_batch_operations = false
+          no_errors
         end
 
         def parse_response(response_xml, options = {})
           Response.parse(response_xml, options) do | response, elements, response_model_name |
             if model_name == response_model_name
               @response = response
-              parse_records(response, elements, paged_records_requested?(options))
+              parse_records(response, elements)
             end
           end
         end
@@ -195,14 +187,8 @@ module Xeroizer
 
       protected
 
-
-        def paged_records_requested?(options)
-          options.has_key?(:page) and options[:page].to_i >= 0
-        end
-
-
-      # Parse the records part of the XML response and builds model instances as necessary.
-        def parse_records(response, elements, paged_results)
+        # Parse the records part of the XML response and builds model instances as necessary.
+        def parse_records(response, elements)
           elements.each do | element |
             new_record = model_class.build_from_node(element, self)
             if element.attribute('status').try(:value) == 'ERROR'
@@ -211,7 +197,6 @@ module Xeroizer
                 new_record.errors << err.text.gsub(/^\s+/, '').gsub(/\s+$/, '')
               end
             end
-            new_record.paged_record_downloaded = paged_results
             response.response_items << new_record
           end
         end

@@ -19,7 +19,6 @@ module Xeroizer
       decimal  :tax_amount
       string   :tax_type
       string   :tax_name
-      string   :description
 
       has_many :tracking_categories, :model_name => 'JournalLineTrackingCategory'
        

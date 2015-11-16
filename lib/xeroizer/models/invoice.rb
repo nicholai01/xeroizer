@@ -73,12 +73,11 @@ module Xeroizer
       string       :currency_code
       decimal      :currency_rate
       datetime     :fully_paid_on_date
-      datetime     :expected_payment_date
       boolean      :sent_to_contact
       boolean      :has_attachments
 
       belongs_to   :contact
-      has_many     :line_items, :complete_on_page => true
+      has_many     :line_items
       has_many     :payments
       has_many     :credit_notes
 
